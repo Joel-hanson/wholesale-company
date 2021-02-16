@@ -2,21 +2,19 @@
 
 
 ## Overview
----
 
 This a sample project created using django and DRF this project has some API which are indented to make the workflow of an wholesale company as simple as possible.
 
 API Documentation: [Click here](https://documenter.getpostman.com/view/2969258/TWDTMyu9)
 
 ## Requirements
----
+
 1. Python (3.6, 3.7, 3.8, 3.9)
 2. Django (2.2, 3.0, 3.1)
 3. Django REST Framework (3.12)
 
 
 ## Get started
----
 
 Step 1: Install requirements
 
@@ -37,7 +35,6 @@ Step 4: Run server
 Step 5: Goto the link http://localhost:8000/api/ to see the API root
 
 ## Features
----
 
 ### 1. To get the list of products and its available stocks.
 ---
@@ -77,6 +74,7 @@ curl --location --request POST 'http://localhost:8000/api/product/<product id>/r
 
 ### 3. To update available stocks in the godown
 ---
+
 **You can do this two different ways**
 
 #### _A. Upload the csv file and update the purchases_
