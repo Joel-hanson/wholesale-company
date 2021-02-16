@@ -2,12 +2,12 @@ from re import match
 from django.conf import settings
 from wholesale.utils import get_last_created_file
 from rest_framework import serializers
-from rest_framework.serializers import ModelSerializer, Serializer
+from rest_framework.serializers import HyperlinkedModelSerializer, ModelSerializer, Serializer
 
 from wholesale.models import Product, Purchase
 
 
-class ProductSerializer(ModelSerializer):
+class ProductSerializer(HyperlinkedModelSerializer):
     class Meta:
         model = Product
         fields = '__all__'

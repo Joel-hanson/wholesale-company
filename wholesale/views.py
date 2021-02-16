@@ -10,10 +10,12 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.exceptions import NotAcceptable, ValidationError
+from rest_framework.filters import SearchFilter
 
 from django.db import transaction
 from django.http import HttpResponse
 from django.db.models import F
+from django.db import IntegrityError
 
 
 class ProductAPIView(ModelViewSet):
@@ -22,6 +24,8 @@ class ProductAPIView(ModelViewSet):
     serializer_action_classes = {
         "refill": RefillSerializer,
     }
+    filter_backends = [SearchFilter]
+    search_fields = ['name', 'id']
 
     def get_serializer_class(self):
         try:
@@ -46,7 +50,7 @@ class ProductAPIView(ModelViewSet):
             product.save()
 
         product.refresh_from_db()
-        product_details = self.serializer_class(instance=product)
+        product_details = self.serializer_class(instance=product, context={'request': request})
         return Response(product_details.data)
 
 
@@ -66,28 +70,40 @@ class PurchaseAPIView(ModelViewSet):
 
     def save_purchase(self, file):
         purchase_list = []
-        with file as fp:
-            try:
-                file_content = fp.read()
-                file_content = file_content.decode()
-            except (UnicodeDecodeError, AttributeError):
-                pass
-            csv_file = StringIO(file_content)
-            csv_dict_reader = csv.DictReader(csv_file)
-            column_names = csv_dict_reader.fieldnames
-            if not all(item in column_names for item in self.csv_required_columns):
-                return ValidationError("Provided files doesn't have the required columns")
-            purchase_list = list(csv_dict_reader)
+        with transaction.atomic():
+            with file as fp:
+                try:
+                    file_content = fp.read()
+                    file_content = file_content.decode()
+                except (UnicodeDecodeError, AttributeError):
+                    pass
+                csv_file = StringIO(file_content)
+                csv_dict_reader = csv.DictReader(csv_file)
+                column_names = csv_dict_reader.fieldnames
+                if not all(item in column_names for item in self.csv_required_columns):
+                    return ValidationError("Provided files doesn't have the required columns")
+                purchase_list = list(csv_dict_reader)
 
-        for purchase in purchase_list:
-            product_id = int(purchase['Product Id'])
-            purchase_uuid = purchase['Purchased Id']
-            purchase_qty = int(purchase['Purchased Qty'])
-            product_name = purchase['Product Name'].strip()
-            product_price = int(purchase['Price Per Quantity'])
-            product_ins, _ = Product.objects.get_or_create(id=product_id, defaults={'name': product_name, 'price': product_price})
-            purchase, _ = product_ins.purchase_set.get_or_create(uuid=purchase_uuid, defaults={'quantity': purchase_qty})
-        return True
+            for purchase in purchase_list:
+                product_id = int(purchase['Product Id'])
+                purchase_uuid = purchase['Purchased Id']
+                purchase_qty = int(purchase['Purchased Qty'])
+                product_name = purchase['Product Name'].strip()
+                product_price = int(purchase['Price Per Quantity'])
+                try:
+                    product_ins, _ = Product.objects.get_or_create(id=product_id, defaults={'name': product_name, 'price': product_price})
+                except IntegrityError as ex:
+                    if 'UNIQUE constraint failed' in ex.args[0]:
+                        raise ValidationError("The product id violates the unique contraint")
+                try:
+                    purchase, created = product_ins.purchase_set.get_or_create(uuid=purchase_uuid, defaults={"quantity": purchase_qty})
+                    if not created:
+                        purchase.quantity = purchase_qty
+                        purchase.save()
+                except IntegrityError as ex:
+                    if 'UNIQUE constraint failed' in ex.args[0]:
+                        raise ValidationError("The purchase id violates the unique contraint")
+            return True, ""
 
     @action(methods=['post'], detail=False, permission_classes=[])
     def upload(self, request):
@@ -119,7 +135,11 @@ class PurchaseAPIView(ModelViewSet):
             file_path = request.POST.get('file')
             if file_path:
                 file_obj = open(file_path, 'r')
-                self.save_purchase(file_obj)
+                try:
+                    self.save_purchase(file_obj)
+                    return Response("Details saved successfully")
+                except Exception as ex:
+                    raise NotAcceptable("Something unexpected happened")
             else:
                 _, file_path = get_last_created_file()
                 if not file_path:
@@ -129,7 +149,7 @@ class PurchaseAPIView(ModelViewSet):
                     self.save_purchase(file_obj)
                     return Response("Details saved successfully")
                 except Exception as ex:
-                    return NotAcceptable("Something unexpected happened")
+                    raise NotAcceptable("Something unexpected happened")
 
         file_list = get_file_details()
         return Response(file_list)

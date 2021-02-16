@@ -23,7 +23,7 @@ def get_file_details():
 
 def get_last_created_file():
     file_name = None
-    max_created = None
+    last_created_at = None
     file_path = None
 
     _, _, filenames = next(walk(settings.MEDIA_ROOT))
@@ -31,13 +31,14 @@ def get_last_created_file():
         file_path = os.path.join(settings.MEDIA_ROOT, name)
         created = os.path.getctime(file_path)
 
-        if max_created:
-            if created > max_created:
+        if last_created_at:
+            if created > last_created_at:
                 file_name = name
-                max_created = created
+                last_created_at = created
         else:
-            max_created = created
+            last_created_at = created
             file_name = name
 
     file_name_regex = "^{}$".format(file_name)
+    file_path = os.path.join(settings.MEDIA_ROOT, file_name)
     return file_name_regex, file_path
