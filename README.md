@@ -34,6 +34,9 @@ Step 4: Run server
 
 Step 5: Goto the link http://localhost:8000/api/ to see the API root
 
+<img width="1191" alt="Screenshot 2021-02-16 at 12 45 45 PM" src="https://user-images.githubusercontent.com/17215044/108030269-f7aff600-7054-11eb-9d26-685fe9052799.png">
+
+
 ## Features
 
 ### 1. To get the list of products and its available stocks.
