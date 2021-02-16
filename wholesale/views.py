@@ -1,6 +1,8 @@
 import csv
 
 from io import StringIO
+
+from rest_framework.generics import get_object_or_404
 from wholesale.utils import get_file_details, get_last_created_file
 
 from wholesale.serializer import FilesSerializer, ProductSerializer, PurchaseDetailedSerializer, PurchaseSerializer, RefillSerializer
@@ -61,6 +63,7 @@ class PurchaseAPIView(ModelViewSet):
     serializer_action_classes = {
         "existing_files": FilesSerializer
     }
+    lookup_field = 'uuid'
 
     def get_serializer_class(self):
         try:
