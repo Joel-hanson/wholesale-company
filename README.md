@@ -6,6 +6,7 @@
 
 This a sample project created using django and DRF this project has some API which are indented to make the workflow of an wholesale company as simple as possible.
 
+API Documentation: [Click here](https://documenter.getpostman.com/view/2969258/TWDTMyu9)
 
 ## Requirements
 ---
